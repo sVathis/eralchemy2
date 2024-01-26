@@ -211,6 +211,7 @@ def filter_resources(
     include_columns=None,
     exclude_tables=None,
     exclude_columns=None,
+    exclude_strings=None,
 ):
     """
     Include the following:
@@ -219,6 +220,7 @@ def filter_resources(
     Exclude the following:
         1. Tables and relationships with tables present in the exclude_tables (lst of str, tables names)
         2. Columns (of whichever table) present in the exclude_columns (lst of str, columns names)
+        3. String, exclude tables with certain strings in their names
     Disclosure note:
         All relationships are taken into consideration before ignoring columns.
         In other words, if one excludes primary or foreign keys, it will still keep the relations display amongst tables
@@ -230,9 +232,21 @@ def filter_resources(
     include_columns = include_columns or [c.name for t in _tables for c in t.columns]
     exclude_tables = exclude_tables or list()
     exclude_columns = exclude_columns or list()
+    exclude_strings = exclude_strings or list()
+
+
+    _tables_filtered = []
+    for t in _tables:
+        cont = False
+        for s in exclude_strings:
+            if s in t.name:
+                cont = True
+        if cont:
+            continue
+        _tables_filtered.append(t)
 
     _tables = [
-        t for t in _tables if t.name not in exclude_tables and t.name in include_tables
+        t for t in _tables_filtered if t.name not in exclude_tables and t.name in include_tables
     ]
     _relationships = [
         r
@@ -263,6 +277,7 @@ def render_er(
     include_columns=None,
     exclude_tables=None,
     exclude_columns=None,
+    exclude_strings=None,
     schema=None,
 ):
     """
@@ -296,6 +311,7 @@ def render_er(
             include_columns=include_columns,
             exclude_tables=exclude_tables,
             exclude_columns=exclude_columns,
+            exclude_strings=exclude_strings,
         )
         intermediary_to_output = get_output_mode(output, mode)
         intermediary_to_output(tables, relationships, output)
